@@ -1,16 +1,20 @@
+// ignore_for_file: non_constant_identifier_names
+import 'dart:async';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
+import 'package:web/web.dart' as web;
 
 import 'package:use_africa_pay_flutter/adapter_config.dart';
 import 'package:use_africa_pay_flutter/adapter_interface.dart';
-import 'package:use_africa_pay_flutter/payment_response.dart';
-import 'package:use_africa_pay_flutter/script_loader.dart';
+import 'package:use_africa_pay_flutter/models/payment_response.dart';
+import 'package:use_africa_pay_flutter/script_loader.dart' as loader;
 
 @JS('PaystackPop.setup')
 external PaystackPopup _paystackSetup(PaystackOptions options);
 
 @JS()
 @anonymous
-extension type PaystackOptions._(JSObject _) {
+extension type PaystackOptions._(JSObject _) implements JSObject {
   external factory PaystackOptions({
     JSString key,
     JSString email,
@@ -26,14 +30,14 @@ extension type PaystackOptions._(JSObject _) {
 
 @JS()
 @anonymous
-extension type PaystackPopup._(JSObject _) {
+extension type PaystackPopup._(JSObject _) implements JSObject {
   external void openIframe();
 }
 
 class PaystackAdapter implements AdapterInterface {
   @override
   Future<void> loadScript({bool testMode = true}) async {
-    await loadScript('https://js.paystack.co/v1/inline.js');
+    await loader.loadScript('https://js.paystack.co/v1/inline.js');
   }
 
   @override
@@ -45,26 +49,27 @@ class PaystackAdapter implements AdapterInterface {
         amount: config.amount.toJS, // Paystack expects amount in kobo
         currency: config.currency.toJS,
         ref: config.reference.toJS,
-        metadata: config.metadata?.toJSBox,
+        metadata: config.metadata?.jsify(),
         channels: config.channels?.map((c) => c.toJS).toList().toJS,
         callback: (JSAny response) {
           final responseAsObject = response as JSObject;
 
           // Break down the logic into simple steps to help the static analyzer.
-          final refJs = responseAsObject['reference'.toJS];
+          final refJs = responseAsObject['reference'] as JSString?;
           final refDart = refJs?.toDart;
 
-          JSAny? txIdJs = responseAsObject['trans'.toJS];
+          JSAny? txIdJs = responseAsObject['trans'];
           if (txIdJs == null || txIdJs.isUndefinedOrNull) {
-            txIdJs = responseAsObject['transaction'.toJS];
+            txIdJs = responseAsObject['transaction'];
           }
-          final txIdDart = txIdJs?.toDart;
+          // Assuming transaction ID is a string, but handle potential numbers if needed, though usually string.
+          final txIdDart = (txIdJs as JSString?)?.toDart;
 
           final paymentResponse = PaymentResponse(
             status: 'success',
             message: 'Payment completed successfully',
-            reference: refDart as String?,
-            transactionId: txIdDart as String?,
+            reference: refDart,
+            transactionId: txIdDart,
             amount: config.amount,
             currency: config.currency,
             paidAt: DateTime.now().toIso8601String(),
@@ -75,7 +80,7 @@ class PaystackAdapter implements AdapterInterface {
             ),
             provider: 'paystack',
             metadata: config.metadata,
-            raw: response.toDart,
+            raw: response.dartify(),
           );
           config.onSuccess(paymentResponse);
         }.toJS,
@@ -87,6 +92,6 @@ class PaystackAdapter implements AdapterInterface {
 
   @override
   JSAny? getInstance() {
-    return JSAny.global['PaystackPop'];
+    return web.window['PaystackPop'];
   }
 }

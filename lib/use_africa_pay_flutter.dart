@@ -2,14 +2,14 @@ library my_package;
 
 export 'adapter_config.dart';
 export 'adapter_interface.dart';
-export 'payment_response.dart';
-export 'user.dart';
+export 'models/payment_response.dart';
+export 'models/user.dart';
 
 import 'package:use_africa_pay_flutter/adapter_interface.dart';
-import 'package:use_africa_pay_flutter/flutterwave_adapter.dart';
-import 'package:use_africa_pay_flutter/monnify_adapter.dart';
-import 'package:use_africa_pay_flutter/paystack_adapter.dart';
-import 'package:use_africa_pay_flutter/remita_adapter.dart';
+import 'package:use_africa_pay_flutter/adapters/flutterwave_adapter.dart';
+import 'package:use_africa_pay_flutter/adapters/monnify_adapter.dart';
+import 'package:use_africa_pay_flutter/adapters/paystack_adapter.dart';
+import 'package:use_africa_pay_flutter/adapters/remita_adapter.dart';
 
 enum PaymentProvider {
   flutterwave,

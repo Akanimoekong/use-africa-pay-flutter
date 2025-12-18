@@ -1,6 +1,6 @@
 
-import 'package:use_africa_pay_flutter/payment_response.dart';
-import 'package:use_africa_pay_flutter/user.dart';
+import 'package:use_africa_pay_flutter/models/payment_response.dart';
+import 'package:use_africa_pay_flutter/models/user.dart';
 
 typedef OnSuccessCallback = void Function(PaymentResponse response);
 typedef OnCloseCallback = void Function();

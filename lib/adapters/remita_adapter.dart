@@ -1,16 +1,20 @@
+// ignore_for_file: non_constant_identifier_names
+import 'dart:async';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
+import 'package:web/web.dart' as web;
 
 import 'package:use_africa_pay_flutter/adapter_config.dart';
 import 'package:use_africa_pay_flutter/adapter_interface.dart';
-import 'package:use_africa_pay_flutter/payment_response.dart';
-import 'package:use_africa_pay_flutter/script_loader.dart';
+import 'package:use_africa_pay_flutter/models/payment_response.dart';
+import 'package:use_africa_pay_flutter/script_loader.dart' as loader;
 
 @JS('RmPaymentEngine.init')
 external RemitaPaymentEngine _remitaInit(RemitaOptions options);
 
 @JS()
 @anonymous
-extension type RemitaOptions._(JSObject _) {
+extension type RemitaOptions._(JSObject _) implements JSObject {
   external factory RemitaOptions({
     JSString key,
     JSString merchantId,
@@ -31,7 +35,7 @@ extension type RemitaOptions._(JSObject _) {
 
 @JS()
 @anonymous
-extension type RemitaPaymentEngine._(JSObject _) {
+extension type RemitaPaymentEngine._(JSObject _) implements JSObject {
   external void showPaymentWidget();
 }
 
@@ -41,7 +45,7 @@ class RemitaAdapter implements AdapterInterface {
     final url = testMode
         ? 'https://remitademo.net/payment/v1/remita-pay-inline.bundle.js'
         : 'https://login.remita.net/payment/v1/remita-pay-inline.bundle.js';
-    await loadScript(url);
+    await loader.loadScript(url);
   }
 
   @override
@@ -63,24 +67,25 @@ class RemitaAdapter implements AdapterInterface {
         transactionId: config.reference.toJS,
         customerId: config.user.email.toJS,
         firstName: (config.user.name?.split(' ').first ?? '').toJS,
-        lastName: (config.user.name?.split(' ').sublist(1).join(' ') ?? '').toJS,
+        lastName:
+            (config.user.name?.split(' ').sublist(1).join(' ') ?? '').toJS,
         email: config.user.email.toJS,
         narration: (config.metadata?['description'] ?? 'Payment').toJS,
         onSuccess: (JSAny response) {
           final responseAsObject = response as JSObject;
 
           // Break down the logic into simple steps to help the static analyzer.
-          JSAny? txIdJs = responseAsObject['transactionId'.toJS];
+          JSAny? txIdJs = responseAsObject['transactionId'];
           if (txIdJs == null || txIdJs.isUndefinedOrNull) {
-            txIdJs = responseAsObject['RRR'.toJS];
+            txIdJs = responseAsObject['RRR'];
           }
-          final txIdDart = txIdJs?.toDart;
+          final txIdDart = (txIdJs as JSString?)?.toDart;
 
           final paymentResponse = PaymentResponse(
             status: 'success',
             message: 'Payment completed successfully',
             reference: config.reference,
-            transactionId: txIdDart as String?,
+            transactionId: txIdDart,
             amount: config.amount,
             currency: config.currency,
             paidAt: DateTime.now().toIso8601String(),
@@ -91,12 +96,12 @@ class RemitaAdapter implements AdapterInterface {
             ),
             provider: 'remita',
             metadata: config.metadata,
-            raw: response.toDart,
+            raw: response.dartify(),
           );
           config.onSuccess(paymentResponse);
         }.toJS,
         onError: (JSAny response) {
-          print('Remita payment error: $response');
+          // print('Remita payment error: $response');
         }.toJS,
         onClose: config.onClose.toJS,
       ),
@@ -107,6 +112,6 @@ class RemitaAdapter implements AdapterInterface {
 
   @override
   JSAny? getInstance() {
-    return JSAny.global['RmPaymentEngine'];
+    return web.window['RmPaymentEngine'];
   }
 }
