@@ -1,4 +1,4 @@
-# My Awesome Payment Package
+# Use Africa Payment Package
 
 A unified Flutter package for integrating multiple payment gateways into your web application. This package provides a simple, consistent API to handle payments through various providers, abstracting away the complexities of each individual SDK.
 
